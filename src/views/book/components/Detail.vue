@@ -102,7 +102,7 @@
         <el-col :span="12">
           <el-form-item label="文件名称:" :label-width="lableWidth">
             <el-input
-              v-model="postForm.unzipPath"
+              v-model="postForm.originalName"
               placeholder="文件名称"
               disabled
             />
@@ -112,8 +112,8 @@
       <el-row>
         <el-col :span="24">
           <el-form-item label="封面:" label-width="60px">
-            <a v-if="postForm.cover" :href="postForm.cover" target="_blank">
-              <img :src="postForm.cover" alt="封面图片" class="preview-img">
+            <a v-if="postForm.coverUrl" :href="postForm.coverUrl" target="_blank">
+              <img :src="postForm.coverUrl" alt="封面图片" class="preview-img">
             </a>
             <span v-else>无</span>
           </el-form-item>
@@ -122,8 +122,8 @@
       <el-row>
         <el-col :span="24">
           <el-form-item label-width="60px" label="目录:">
-            <div v-if="postForm.content && postForm.contents.length" class="contents-wrapper">
-              <el-tree />
+            <div v-if="contentsTree && contentsTree.length" class="contents-wrapper">
+              <el-tree :data="contentsTree" @node-click="onContentClick" />
             </div>
             <span v-else>无</span>
           </el-form-item>
@@ -138,6 +138,22 @@ import Sticky from '../../../components/Sticky'
 import Warning from './Warning'
 import EbookUpload from '../../../components/EbookUpload'
 import MdInput from '../../../components/MDinput'
+
+const defaultForm = {
+  title: '',
+  author: '',
+  publisher: '',
+  language: '',
+  rootFile: '',
+  cover: '',
+  url: '',
+  originalName: '',
+  coverUrl: '',
+  fileName: '',
+  coverPath: '',
+  filePath: '',
+  unzipPath: ''
+}
 export default {
   components: {
     Sticky,
@@ -153,7 +169,8 @@ export default {
       loading: false,
       postForm: {},
       fileList: [],
-      lableWidth: '120px'
+      lableWidth: '120px',
+      contentsTree: []
     }
   },
   methods: {
@@ -166,11 +183,58 @@ export default {
         this.loading = false
       }, 1000)
     },
-    onUploadSuccess() {
-      console.log('success')
+    setData(data) {
+      const {
+        title,
+        author,
+        publisher,
+        language,
+        rootFile,
+        cover,
+        url,
+        originalName,
+        contentsTree,
+        contents,
+        coverUrl,
+        fileName,
+        coverPath,
+        filePath,
+        unzipPath
+      } = data
+      this.postForm = {
+        ...this.postForm,
+        title,
+        author,
+        publisher,
+        language,
+        rootFile,
+        cover,
+        url,
+        originalName,
+        contents,
+        coverUrl,
+        fileName,
+        coverPath,
+        filePath,
+        unzipPath
+      }
+      this.contentsTree = contentsTree
+    },
+    setDefault() {
+      this.postForm = Object.assign({}, defaultForm)
+      this.contentsTree = []
+    },
+    onUploadSuccess(data) {
+      // console.log('success' + JSON.stringify(data, null, 4))
+      this.setData(data)
     },
     onUploadRemove() {
-      console.log('remove')
+      this.setDefault()
+    },
+    onContentClick(data) {
+      if (data.text) {
+        window.open(data.text)
+      }
     }
   }
 }
