@@ -1,5 +1,5 @@
 <template>
-  <el-form ref="postForm" :model="postForm">
+  <el-form ref="postForm" :model="postForm" :rules="rules">
     <sticky :class-name="'sub-navbar '">
       <el-button v-if="!isEdit" @click="showGuide">显示帮助</el-button>
       <el-button
@@ -32,7 +32,7 @@
           </el-form-item>
           <el-row>
             <el-col :span="12">
-              <el-form-item label="作者:" :label-width="lableWidth">
+              <el-form-item prop="author" label="作者:" :label-width="lableWidth">
                 <el-input
                   v-model="postForm.author"
                   placeholder="作者"
@@ -40,7 +40,7 @@
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="出版社:" :label-width="lableWidth">
+              <el-form-item prop="publisher" label="出版社:" :label-width="lableWidth">
                 <el-input
                   v-model="postForm.publisher"
                   placeholder="出版社"
@@ -52,7 +52,7 @@
       </el-row>
       <el-row>
         <el-col :span="12">
-          <el-form-item label="语言:" :label-width="lableWidth">
+          <el-form-item prop="language" label="语言:" :label-width="lableWidth">
             <el-input
               v-model="postForm.language"
               placeholder="语言"
@@ -138,6 +138,7 @@ import Sticky from '../../../components/Sticky'
 import Warning from './Warning'
 import EbookUpload from '../../../components/EbookUpload'
 import MdInput from '../../../components/MDinput'
+import { createBook } from '../../../api/book'
 
 const defaultForm = {
   title: '',
@@ -154,6 +155,12 @@ const defaultForm = {
   filePath: '',
   unzipPath: ''
 }
+const fields = {
+  title: '标题',
+  author: '作者',
+  publisher: '出版社',
+  language: '语言'
+}
 export default {
   components: {
     Sticky,
@@ -165,12 +172,25 @@ export default {
     isEdit: Boolean
   },
   data() {
+    const validateRequire = (rule, value, callback) => {
+      if (value.length === 0) {
+        callback(new Error(fields[rule.field] + '必须填写'))
+      } else {
+        callback()
+      }
+    }
     return {
       loading: false,
       postForm: {},
       fileList: [],
       lableWidth: '120px',
-      contentsTree: []
+      contentsTree: [],
+      rules: {
+        title: [{ validator: validateRequire }],
+        author: [{ validator: validateRequire }],
+        publisher: [{ validator: validateRequire }],
+        language: [{ validator: validateRequire }]
+      }
     }
   },
   methods: {
@@ -178,10 +198,29 @@ export default {
       console.log('showGuide')
     },
     submitForm() {
-      this.loading = true
-      setTimeout(() => {
-        this.loading = false
-      }, 1000)
+      if (!this.loading) {
+        this.loading = true
+        this.$refs.postForm.validate((valid, felds) => {
+          // console.log(valid, felds)
+          if (valid) {
+            // console.log(this.postForm)
+            // const book = {...this.postForm}
+            const book = Object.assign({}, this.postForm)
+            delete book.contents
+            delete book.contentsTree
+            if (!this.isEdit) {
+              this.loading = false
+              createBook(book)
+            } else {
+              // updateBook(book)
+            }
+          } else {
+            const message = felds[Object.keys(felds)[0]][0].message
+            this.$message({ message, type: 'error' })
+            this.loading = false
+          }
+        })
+      }
     },
     setData(data) {
       const {
