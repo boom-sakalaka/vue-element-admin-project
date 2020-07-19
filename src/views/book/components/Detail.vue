@@ -60,7 +60,7 @@
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="根文件:" :label-width="lableWidth">
+          <el-form-item prop="rootFile" label="根文件:" :label-width="lableWidth">
             <el-input
               v-model="postForm.rootFile"
               placeholder="根文件"
@@ -71,7 +71,7 @@
       </el-row>
       <el-row>
         <el-col :span="12">
-          <el-form-item label="文件路径:" :label-width="lableWidth">
+          <el-form-item prop="filePath" label="文件路径:" :label-width="lableWidth">
             <el-input
               v-model="postForm.filePath"
               placeholder="文件路径:"
@@ -80,7 +80,7 @@
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="解压路径:" :label-width="lableWidth">
+          <el-form-item prop="unzipPath" label="解压路径:" :label-width="lableWidth">
             <el-input
               v-model="postForm.unzipPath"
               placeholder="解压路径"
@@ -91,16 +91,16 @@
       </el-row>
       <el-row>
         <el-col :span="12">
-          <el-form-item label="封面路径:" :label-width="lableWidth">
+          <el-form-item prop="coverPath" label="封面路径:" :label-width="lableWidth">
             <el-input
-              v-model="postForm.filePath"
+              v-model="postForm.coverPath"
               placeholder="封面路径:"
               disabled
             />
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="文件名称:" :label-width="lableWidth">
+          <el-form-item prop="originalName" label="文件名称:" :label-width="lableWidth">
             <el-input
               v-model="postForm.originalName"
               placeholder="文件名称"
@@ -111,7 +111,7 @@
       </el-row>
       <el-row>
         <el-col :span="24">
-          <el-form-item label="封面:" label-width="60px">
+          <el-form-item prop="coverUrl" label="封面:" label-width="60px">
             <a v-if="postForm.coverUrl" :href="postForm.coverUrl" target="_blank">
               <img :src="postForm.coverUrl" alt="封面图片" class="preview-img">
             </a>
@@ -121,7 +121,7 @@
       </el-row>
       <el-row>
         <el-col :span="24">
-          <el-form-item label-width="60px" label="目录:">
+          <el-form-item prop="contents" label-width="60px" label="目录:">
             <div v-if="contentsTree && contentsTree.length" class="contents-wrapper">
               <el-tree :data="contentsTree" @node-click="onContentClick" />
             </div>
@@ -140,21 +140,21 @@ import EbookUpload from '../../../components/EbookUpload'
 import MdInput from '../../../components/MDinput'
 import { createBook } from '../../../api/book'
 
-const defaultForm = {
-  title: '',
-  author: '',
-  publisher: '',
-  language: '',
-  rootFile: '',
-  cover: '',
-  url: '',
-  originalName: '',
-  coverUrl: '',
-  fileName: '',
-  coverPath: '',
-  filePath: '',
-  unzipPath: ''
-}
+// const defaultForm = {
+//   title: '',
+//   author: '',
+//   publisher: '',
+//   language: '',
+//   rootFile: '',
+//   cover: '',
+//   url: '',
+//   originalName: '',
+//   coverUrl: '',
+//   fileName: '',
+//   coverPath: '',
+//   filePath: '',
+//   unzipPath: ''
+// }
 const fields = {
   title: '标题',
   author: '作者',
@@ -173,7 +173,7 @@ export default {
   },
   data() {
     const validateRequire = (rule, value, callback) => {
-      if (value.length === 0) {
+      if (value && value.length === 0) {
         callback(new Error(fields[rule.field] + '必须填写'))
       } else {
         callback()
@@ -201,16 +201,26 @@ export default {
       if (!this.loading) {
         this.loading = true
         this.$refs.postForm.validate((valid, felds) => {
-          // console.log(valid, felds)
+          console.log(valid, felds)
           if (valid) {
             // console.log(this.postForm)
             // const book = {...this.postForm}
             const book = Object.assign({}, this.postForm)
-            delete book.contents
             delete book.contentsTree
             if (!this.isEdit) {
-              this.loading = false
-              createBook(book)
+              createBook(book).then(response => {
+                const { msg } = response
+                this.$notify({
+                  title: '操作成功',
+                  message: msg,
+                  type: 'success',
+                  duration: 2000
+                })
+                this.loading = false
+                this.setDefault()
+              }).catch(() => {
+                this.loading = false
+              })
             } else {
               // updateBook(book)
             }
@@ -260,8 +270,10 @@ export default {
       this.contentsTree = contentsTree
     },
     setDefault() {
-      this.postForm = Object.assign({}, defaultForm)
+      // this.postForm = Object.assign({}, defaultForm)
       this.contentsTree = []
+      this.fileList = []
+      this.$refs.postForm.resetFields()
     },
     onUploadSuccess(data) {
       // console.log('success' + JSON.stringify(data, null, 4))
