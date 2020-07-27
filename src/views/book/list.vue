@@ -113,11 +113,31 @@
         </template>
       </el-table-column>
       <el-table-column label="文件名" prop="fileName" width="100" align="center" />
-      <el-table-column label="文件路径" prop="filePath" width="100" align="center" />
-      <el-table-column label="封面路径" prop="coverPath" width="100" align="center" />
-      <el-table-column label="解压路径" prop="unzipPath" width="100" align="center" />
-      <el-table-column label="上传人" prop="createUser" width="100" align="center" />
-      <el-table-column label="上传时间" prop="createDt" width="100" align="center" />
+      <el-table-column label="文件路径" prop="filePath" width="100" align="center">
+        <template slot-scope="{ row : { filePath } }">
+          <span>{{ filePath | valueFilter }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="封面路径" prop="coverPath" width="100" align="center">
+        <template slot-scope="{ row : { coverPath } }">
+          <span>{{ coverPath | valueFilter }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="解压路径" prop="unzipPath" width="100" align="center">
+        <template slot-scope="{ row : { unzipPath } }">
+          <span>{{ unzipPath | valueFilter }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="上传人" prop="createUser" width="100" align="center">
+        <template slot-scope="{ row : { createUser } }">
+          <span>{{ createUser | valueFilter }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="上传时间" prop="createDt" width="100" align="center">
+        <template slot-scope="{ row : { createDt } }">
+          <span>{{ createDt | timeFilter }}</span>
+        </template>
+      </el-table-column>
       <el-table-column
         label="操作"
         width="120"
@@ -126,6 +146,7 @@
       >
         <template slot-scope="{ row }">
           <el-button type="text" icon="el-icon-edit" @click="handleUpdate(row)" />
+          <el-button type="text" icon="el-icon-delete" style="color:#f56c6c" @click="handleDelete(row)" />
         </template>
       </el-table-column>
     </el-table>
@@ -142,12 +163,21 @@
 <script>
 import Pagination from '../../components/Pagination'
 import waves from '../../directive/waves/waves'
-import { getCategory, listBook } from '../../api/book'
+import { getCategory, listBook, deleteBook } from '../../api/book'
+import { parseTime } from '../../utils'
 export default {
   components: {
     Pagination
   },
   directives: { waves },
+  filters: {
+    valueFilter(value) {
+      return value || '无'
+    },
+    timeFilter(time) {
+      return time ? parseTime(time, '{y}-{m}-{d} {h}:{i}') : '无'
+    }
+  },
   data() {
     return {
       tableKey: 0,
@@ -170,6 +200,23 @@ export default {
     parseQuery() {
       const pageListQuery = { page: 1, pageSize: 20, sort: '+id' }
       this.listQuery = { ...pageListQuery, ...this.listQuery }
+    },
+    handleDelete(row) {
+      this.$confirm('此操作将永久删除电子书,是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        deleteBook(row.fileName).then(response => {
+          this.$notify({
+            title: '成功',
+            message: response.msg || '删除成功',
+            type: 'success',
+            duration: 2000
+          })
+          this.handleFileter()
+        })
+      })
     },
     handleUpdate(row) {
       // console.log('row' + JSON.stringify(row, null, 4))
