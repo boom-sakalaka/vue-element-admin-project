@@ -138,7 +138,7 @@ import Sticky from '../../../components/Sticky'
 import Warning from './Warning'
 import EbookUpload from '../../../components/EbookUpload'
 import MdInput from '../../../components/MDinput'
-import { createBook, getBook } from '../../../api/book'
+import { createBook, getBook, updateBook } from '../../../api/book'
 
 // const defaultForm = {
 //   title: '',
@@ -210,6 +210,16 @@ export default {
       console.log('showGuide')
     },
     submitForm() {
+      const onSuccess = (response) => {
+        const { msg } = response
+        this.$notify({
+          title: '操作成功',
+          message: msg,
+          type: 'success',
+          duration: 2000
+        })
+        this.loading = false
+      }
       if (!this.loading) {
         this.loading = true
         this.$refs.postForm.validate((valid, felds) => {
@@ -221,20 +231,18 @@ export default {
             delete book.contentsTree
             if (!this.isEdit) {
               createBook(book).then(response => {
-                const { msg } = response
-                this.$notify({
-                  title: '操作成功',
-                  message: msg,
-                  type: 'success',
-                  duration: 2000
-                })
-                this.loading = false
+                onSuccess(response)
                 this.setDefault()
               }).catch(() => {
                 this.loading = false
               })
             } else {
-              // updateBook(book)
+              updateBook(book).then(response => {
+                onSuccess(response)
+              // eslint-disable-next-line handle-callback-err
+              }).catch(err => {
+                this.loading = false
+              })
             }
           } else {
             const message = felds[Object.keys(felds)[0]][0].message
@@ -280,6 +288,7 @@ export default {
         unzipPath
       }
       this.contentsTree = contentsTree
+      this.fileList = [{ name: originalName || fileName, url }]
     },
     setDefault() {
       // this.postForm = Object.assign({}, defaultForm)
